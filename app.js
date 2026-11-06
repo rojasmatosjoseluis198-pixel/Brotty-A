@@ -162,8 +162,9 @@ function calcDia(f, S, sob) {
 
   // Gastos del día que no estaban previstos
   const k = costoClase(f);
-  let pc = comidaSemana, pp = k.pasaje, pm = k.menu, noPrev = 0;
+  let pc = comidaSemana, pp = k.pasaje, pm = k.menu, noPrev = 0, comio = false;
   for (const m of movsDia.filter((x) => x.tipo === "gasto").sort((a, b) => a.creado - b.creado)) {
+    if (m.cat === "fuera") comio = true;
     let p = 0;
     if (m.cat === "pagos" || m.cat === "ajuste") p = m.monto;
     else if (m.cat === "ingredientes") { p = Math.min(m.monto, pc); pc -= p; }
@@ -174,7 +175,14 @@ function calcDia(f, S, sob) {
   const prestado = suma(E.prestamos.filter((p) => p.tipo === "preste" && p.fecha === f), (p) => p.monto);
   const deudaPag = suma(E.prestamos.filter((p) => p.tipo === "debo").flatMap((p) => p.pagos.filter((x) => x.fecha === f)), (x) => x.monto);
   noPrev = r2(noPrev + prestado + Math.max(0, deudaPag - resDeudas));
-  return { D, base: r2(base), sob: r2(sob), reservas, resComida, resClase, resPagos, resDeudas, diasClase, libreReal, diario, noPrev, hoy: r2(diario - noPrev), sobFin: r2(sob + Math.max(0, diario - noPrev)) };
+  // Lo que sobra de la comida fuera se libera apenas se registra la comida del día.
+  // El pasaje NO se libera durante el día (ida y vuelta); lo que sobre va al sobrante en la noche.
+  const liberado = k.menu && comio ? r2(Math.max(0, pm)) : 0;
+  const disponible = r2(diario + liberado);
+  const restoNoUsado = (k.menu && !comio ? pm : 0) + Math.max(0, pp);
+  return { D, base: r2(base), sob: r2(sob), reservas, resComida, resClase, resPagos, resDeudas, diasClase, libreReal, diario, noPrev,
+    liberado, disponible, pasajeHoy: k.pasaje, comidaHoy: k.menu, comio, pasajePend: r2(Math.max(0, pp)),
+    hoy: r2(disponible - noPrev), sobFin: r2(sob + Math.max(0, disponible - noPrev) + restoNoUsado) };
 }
 
 // Recorre el período día por día: lo que no se gasta va al sobrante (no se suma al día siguiente)
@@ -199,7 +207,7 @@ function calc() {
   for (const m of E.movs) saldo += m.tipo === "ingreso" ? m.monto : -m.monto;
   for (const p of E.prestamos) saldo += p.tipo === "debo" ? pendienteP(p) : -pendienteP(p);
   const enMetas = suma(E.metas, ahorradoMeta);
-  return Object.assign(r, { T, S, P, subVencida, saldo: r2(saldo), enMetas, libre: r2(saldo - enMetas), diarioBase: r.diario, sobrante: r.sob });
+  return Object.assign(r, { T, S, P, subVencida, saldo: r2(saldo), enMetas, libre: r2(saldo - enMetas), diarioBase: r.disponible, sobrante: r.sob });
 }
 
 // ---------- Ánimo de Brotty ----------
@@ -263,11 +271,22 @@ function renderInicio(k) {
   const num = $("#hoyNum");
   num.textContent = soles(Math.max(0, k.hoy));
   num.classList.toggle("neg", k.hoy <= 0);
-  const total = k.diarioBase;
+  const total = k.disponible;
   $("#hoyBarra").style.width = (total > 0 ? Math.min(100, (k.noPrev / total) * 100) : (k.noPrev > 0 ? 100 : 0)) + "%";
-  $("#hoySub").innerHTML = k.hoy < 0
+  let sub = k.hoy < 0
     ? `Hoy te pasaste ${soles(-k.hoy)} · los próximos días se ajustan`
-    : `Gastaste hoy ${soles(k.noPrev)} de ${soles(total)}`;
+    : total <= 0 && k.noPrev <= 0
+      ? `Hoy no tienes plata libre: lo que tienes ya está apartado para lo necesario`
+      : `Gastaste hoy ${soles(k.noPrev)} de ${soles(total)}`;
+  if (k.pasajeHoy || k.comidaHoy) {
+    const partes = [];
+    if (k.pasajeHoy) partes.push(`🚌 ${soles(k.pasajeHoy)}${k.pasajePend <= 0 ? " ✓" : ""}`);
+    if (k.comidaHoy) partes.push(`🍜 ${soles(k.comidaHoy)}${k.comio ? " ✓" : ""}`);
+    partes.push(`✨ libre ${soles(k.diario)}`);
+    sub += `<br><span class="desglose">Para hoy: ${soles(k.pasajeHoy + k.comidaHoy + k.diario)} → ${partes.join(" · ")}</span>`;
+  }
+  if (k.liberado > 0) sub += `<br><span class="gold">🍜 Te sobraron ${soles(k.liberado)} de tu comida ✨</span>`;
+  $("#hoySub").innerHTML = sub;
   $("#subLine").innerHTML = (k.sobrante > 0 ? `<span class="gold">Sobrante del período: ${soles(k.sobrante)}</span><br>` : "") + esc(E.config.proxSub
     ? (k.subVencida ? `${proxIng(1)}: ¿ya llegó?` : `${proxIng(1)}: ~${k.D} día${k.D === 1 ? "" : "s"} (aprox.)`)
     : "");
