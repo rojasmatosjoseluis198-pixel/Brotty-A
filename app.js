@@ -53,7 +53,7 @@ const ING = {
 const OCUP = { univ: "Universidad", instituto: "Instituto", trabajo: "Trabajo", otro: "Otro" };
 const VIV = { familia: "Vivo con mi familia", foraneo: "Soy foráneo (alquilo cuarto)", otro: "Otro" };
 const lbl = () => (ING[E.config.ingTipo] || ING.mesada).n;
-const prox = (may) => (E.config.ingTipo === "sueldo" ? (may ? "Próximo" : "próximo") : (may ? "Próxima" : "próxima")) + " " + lbl();
+const proxIng = (may) => (E.config.ingTipo === "sueldo" ? (may ? "Próximo" : "próximo") : (may ? "Próxima" : "próxima")) + " " + lbl();
 const esEstudiante = () => ["univ", "instituto"].includes(E.config.ocupacion);
 const diasDe = () => (E.config.ocupacion === "trabajo" ? "trabajo" : "clase");
 function etiquetas() {
@@ -266,7 +266,7 @@ function renderInicio(k) {
     ? `Hoy te pasaste ${soles(-k.hoy)} · los próximos días se ajustan`
     : `Gastaste hoy ${soles(k.noPrev)} de ${soles(total)}`;
   $("#subLine").innerHTML = (k.sobrante > 0 ? `<span class="gold">Sobrante del período: ${soles(k.sobrante)}</span><br>` : "") + esc(E.config.proxSub
-    ? (k.subVencida ? `${prox(1)}: ¿ya llegó?` : `${prox(1)}: ~${k.D} día${k.D === 1 ? "" : "s"} (aprox.)`)
+    ? (k.subVencida ? `${proxIng(1)}: ¿ya llegó?` : `${proxIng(1)}: ~${k.D} día${k.D === 1 ? "" : "s"} (aprox.)`)
     : "");
   const np = E.prestamos.filter((p) => pendienteP(p) > 0).length;
   $("#nPrest").textContent = np;
@@ -275,7 +275,7 @@ function renderInicio(k) {
   const av = [];
   if (k.subVencida) av.push(`<div class="card aviso"><b>${ING[E.config.ingTipo]?.e || "💵"} ¿Ya llegó tu ${lbl()}?</b><div class="suave">La fecha aproximada ya pasó.</div>
     <div class="acciones"><button class="btn chico oro" data-act="llegoSub">Sí, llegó</button><button class="btn chico sec" data-act="cambiarFechaSub">Cambiar fecha</button></div></div>`);
-  if (k.libreReal < 0) av.push(`<div class="card aviso rojo"><b>⚠️ Tus pagos no alcanzan</b><div class="suave">Hasta tu ${prox()} te faltan <b class="coral">${soles(-k.libreReal)}</b> para cubrir lo apartado (pagos, pasajes y comida). Revisa tus pagos o habla con tiempo.</div></div>`);
+  if (k.libreReal < 0) av.push(`<div class="card aviso rojo"><b>⚠️ Tus pagos no alcanzan</b><div class="suave">Hasta tu ${proxIng()} te faltan <b class="coral">${soles(-k.libreReal)}</b> para cubrir lo apartado (pagos, pasajes y comida). Revisa tus pagos o habla con tiempo.</div></div>`);
   const T = k.T;
   const vencidos = E.prestamos.filter((p) => pendienteP(p) > 0 && p.vence && p.vence <= T);
   for (const p of vencidos.slice(0, 2)) {
@@ -355,7 +355,7 @@ function renderPresup(k) {
 
   // Resumen de lo apartado
   const filas = [["🥕 Comida", k.resComida], ["🚌 Pasajes y 🍜 menús", k.resClase], ["📌 Pagos programados", k.resPagos], ["🙏 Deudas por devolver", k.resDeudas]].filter((x) => x[1] > 0);
-  h += `<div class="card"><h3>🛡️ Lo que Brotty aparta por ti</h3><div class="suave" style="font-size:13px;margin-bottom:6px">Hasta tu ${prox()} (~${k.D} días)</div>
+  h += `<div class="card"><h3>🛡️ Lo que Brotty aparta por ti</h3><div class="suave" style="font-size:13px;margin-bottom:6px">Hasta tu ${proxIng()} (~${k.D} días)</div>
     ${filas.map(([n, v]) => `<div class="fila" style="justify-content:space-between;margin:4px 0"><span style="flex:none">${n}</span><b style="flex:none">${soles(v)}</b></div>`).join("") || `<div class="suave">Nada apartado.</div>`}
     <hr style="border:0;border-top:2px solid var(--borde);margin:8px 0"><div class="fila" style="justify-content:space-between"><span style="flex:none">Total apartado</span><b style="flex:none" class="gold">${soles(k.reservas)}</b></div>
     <div class="fila" style="justify-content:space-between;margin-top:4px"><span style="flex:none">Tu diario fijo</span><b style="flex:none" class="verde">${soles(k.diario)}</b></div></div>`;
@@ -685,7 +685,7 @@ const ACT = {
     E.config.proxSub = prox; despuesDeSubvencion(); guardar(); cerrar(); celebrar(); sugerirMeta(sobAnt);
   },
   cambiarFechaSub: () => abrir(() => {
-    sheet.innerHTML = `${btnCerrar()}<h2>${prox(1)}</h2><p class="nota">Pon la fecha aproximada; la puedes cambiar cuando quieras.</p>
+    sheet.innerHTML = `${btnCerrar()}<h2>${proxIng(1)}</h2><p class="nota">Pon la fecha aproximada; la puedes cambiar cuando quieras.</p>
       <input type="date" id="sProx" value="${addDias(hoyISO(), 3)}"><button class="btn full" style="margin-top:14px" data-act="guardarFechaSub">Guardar</button>`;
   }),
   guardarFechaSub: () => { const v = $("#sProx").value; if (!v) return; E.config.proxSub = v; guardar(); cerrar(); },
