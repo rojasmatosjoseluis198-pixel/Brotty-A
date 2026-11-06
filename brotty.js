@@ -13,18 +13,56 @@
     mono: { n: "Moño", e: "🎀" }, pestanas: { n: "Pestañas", e: "👁️" }, gorrita: { n: "Gorrita", e: "🧢" },
     lentes: { n: "Lentes", e: "👓" }, bigote: { n: "Bigotito", e: "🥸" }
   };
-  const CON_SOMBRERO = ["halloween", "navidad", "sanjuan", "patrias", "cumple"];
-  function estilosSVG(est, traje, o) {
+  function estilosDefs(k) {
+    return `<linearGradient id="len${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d8f6ff" stop-opacity=".55"/><stop offset="1" stop-color="#6ec8ff" stop-opacity=".25"/></linearGradient>
+      <linearGradient id="gor${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6b6b"/><stop offset="1" stop-color="#c81d2e"/></linearGradient>
+      <linearGradient id="mon${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff9ccc"/><stop offset="1" stop-color="#e0337a"/></linearGradient>
+      <linearGradient id="big${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a4a26"/><stop offset="1" stop-color="#3a1f0c"/></linearGradient>`;
+  }
+  function estilosSVG(est, traje, o, k) {
     let s = "";
-    if (est.includes("pestanas")) s += `<g stroke="${o}" stroke-width="4" stroke-linecap="round"><path d="M74 116 L64 108 M76 108 L70 98 M82 104 L80 93"/><path d="M186 116 L196 108 M184 108 L190 98 M178 104 L180 93"/></g>`;
-    if (est.includes("lentes") && traje !== "anionuevo") s += `<g fill="rgba(255,255,255,.12)" stroke="#1b1b1b" stroke-width="6"><circle cx="96" cy="134" r="31"/><circle cx="164" cy="134" r="31"/></g><path d="M127 130 Q 130 124 133 130" stroke="#1b1b1b" stroke-width="6" fill="none"/>`;
-    if (est.includes("bigote")) s += `<path d="M130 160 C 118 150,100 152,96 162 C 104 160,112 164,130 162 C 148 164,156 160,164 162 C 160 152,142 150,130 160 Z" fill="#3a2414" stroke="#1b0f06" stroke-width="2.5"/>`;
-    if (est.includes("gorrita") && !CON_SOMBRERO.includes(traje)) s += `<path d="M72 96 C 70 52,190 52,188 96 Z" fill="#2f6bff" stroke="#0a1f5a" stroke-width="5" stroke-linejoin="round"/><path d="M76 94 C 50 94,30 100,26 108 C 50 112,70 106,80 100 Z" fill="#1d47b8" stroke="#0a1f5a" stroke-width="4" stroke-linejoin="round"/><circle cx="130" cy="58" r="5" fill="#ffd23f"/>`;
-    if (est.includes("mono")) s += `<g transform="translate(176 80) rotate(20) scale(1.5)"><path d="M0 0 C -22 -18,-26 10,0 0 C 22 -18,26 10,0 0 Z" fill="#ff5ea8" stroke="#7a1844" stroke-width="3.5" stroke-linejoin="round"/><circle r="6" fill="#ff8fc3" stroke="#7a1844" stroke-width="3"/></g>`;
+    if (est.includes("pestanas")) s += `
+      <path d="M70 116 Q 96 98 122 116" stroke="#14070a" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M138 116 Q 164 98 190 116" stroke="#14070a" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <g fill="#14070a"><path d="M72 114 C 62 110,56 100,58 92 C 62 100,68 104,78 108 Z"/><path d="M80 108 C 74 100,72 90,76 84 C 78 92,82 98,88 104 Z"/><path d="M90 104 C 88 96,90 88,94 84 C 94 92,96 98,98 103 Z"/>
+        <path d="M188 114 C 198 110,204 100,202 92 C 198 100,192 104,182 108 Z"/><path d="M180 108 C 186 100,188 90,184 84 C 182 92,178 98,172 104 Z"/><path d="M170 104 C 172 96,170 88,166 84 C 166 92,164 98,162 103 Z"/></g>`;
+    if (est.includes("lentes") && traje !== "anionuevo") s += `
+      <g>
+        <path d="M64 128 L 40 120 M196 128 L 220 120" stroke="#2a1a40" stroke-width="6" stroke-linecap="round"/>
+        <rect x="62" y="104" width="68" height="58" rx="24" fill="url(#len${k})" stroke="#2a1a40" stroke-width="7"/>
+        <rect x="130" y="104" width="68" height="58" rx="24" fill="url(#len${k})" stroke="#2a1a40" stroke-width="7"/>
+        <rect x="66" y="108" width="60" height="50" rx="20" fill="none" stroke="#a77bff" stroke-width="2.5" opacity=".8"/>
+        <rect x="134" y="108" width="60" height="50" rx="20" fill="none" stroke="#a77bff" stroke-width="2.5" opacity=".8"/>
+        <path d="M122 120 Q 130 112 138 120" stroke="#2a1a40" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M74 120 L 92 112 M74 130 L 84 126" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+        <path d="M142 120 L 160 112 M142 130 L 152 126" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+      </g>`;
+    if (est.includes("bigote")) s += `
+      <path d="M130 158 C 122 146,100 144,90 152 C 82 158,76 152,78 146 C 70 152,74 166,90 166 C 104 166,116 162,130 160
+               C 144 162,156 166,170 166 C 186 166,190 152,182 146 C 184 152,178 158,170 152 C 160 144,138 146,130 158 Z"
+            fill="url(#big${k})" stroke="#1b0f06" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M96 152 C 104 150,114 152,122 156 M164 152 C 156 150,146 152,138 156" stroke="#b07a4a" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>`;
+    if (est.includes("gorrita")) s += `
+      <path d="M68 98 C 64 44,196 44,192 98 Q 130 108 68 98 Z" fill="url(#gor${k})" stroke="#5a0a12" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M130 50 L 130 100 M98 56 C 92 70,90 86,92 100 M162 56 C 168 70,170 86,168 100" stroke="#8a1020" stroke-width="3" fill="none" stroke-dasharray="5 4"/>
+      <path d="M84 68 C 92 58,106 52,118 52" stroke="#ffb3b3" stroke-width="6" fill="none" stroke-linecap="round" opacity=".7"/>
+      <circle cx="130" cy="78" r="15" fill="#fff" stroke="#5a0a12" stroke-width="3"/>
+      <text x="130" y="85" text-anchor="middle" font-size="19" font-weight="900" fill="#c81d2e" font-family="Arial Black,Arial">B</text>
+      <path d="M66 96 C 40 94,20 100,14 112 C 30 120,60 114,82 104 Z" fill="#c81d2e" stroke="#5a0a12" stroke-width="4.5" stroke-linejoin="round"/>
+      <path d="M22 110 C 40 106,60 104,76 102" stroke="#7a0f1a" stroke-width="3" fill="none" opacity=".6"/>
+      <circle cx="130" cy="50" r="6" fill="#c81d2e" stroke="#5a0a12" stroke-width="3"/>`;
+    if (est.includes("mono")) s += `
+      <g transform="translate(184 82) rotate(18)">
+        <path d="M-4 6 L -14 34 L -4 28 L 2 36 Z M4 6 L 14 32 L 4 26 L -2 34 Z" fill="#e0337a" stroke="#7a1844" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M0 0 C -14 -24,-46 -20,-40 4 C -36 22,-14 14,0 0 Z" fill="url(#mon${k})" stroke="#7a1844" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M0 0 C 14 -24,46 -20,40 4 C 36 22,14 14,0 0 Z" fill="url(#mon${k})" stroke="#7a1844" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M-8 -2 C -18 -10,-28 -10,-32 -4 M8 -2 C 18 -10,28 -10,32 -4" stroke="#b02060" stroke-width="2.5" fill="none" opacity=".7"/>
+        <circle cx="-26" cy="-6" r="3.5" fill="#fff" opacity=".9"/><circle cx="-18" cy="6" r="2.8" fill="#fff" opacity=".9"/><circle cx="26" cy="-6" r="3.5" fill="#fff" opacity=".9"/><circle cx="20" cy="6" r="2.8" fill="#fff" opacity=".9"/>
+        <ellipse cx="0" cy="0" rx="9" ry="10" fill="#ff7ab0" stroke="#7a1844" stroke-width="3.5"/>
+        <path d="M-30 -12 C -24 -16,-16 -14,-12 -10" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>
+      </g>`;
     return s;
   }
-
-  // Traje según la fecha (todo el mes)
   function trajeDeHoy(fecha, manual) {
     const d = fecha || new Date();
     if (manual && manual.mes === d.toLocaleDateString("en-CA").slice(0, 7)) return manual.traje || null;
@@ -114,10 +152,11 @@
     halloween: {
       atras: `<path d="M56 118 C 20 160,10 220,4 246 L 256 246 C 250 220,240 160,204 118 Z" fill="#3a1352" stroke="#12051c" stroke-width="5" stroke-linejoin="round"/>
               <path d="M70 128 C 44 170,34 220,30 240 L 230 240 C 226 220,216 170,190 128 Z" fill="#b3122e" opacity=".85"/>`,
-      frente: `
+      sombrero: `
         <path d="M66 96 C 60 44,200 44,194 96 Q 130 110 66 96 Z" fill="#ff8c1a" stroke="#5a2a00" stroke-width="5" stroke-linejoin="round"/>
         <path d="M100 54 C 92 70,92 88,98 102 M130 50 L130 106 M160 54 C 168 70,168 88,162 102" stroke="#c45f00" stroke-width="4" fill="none" stroke-linecap="round"/>
-        <path d="M84 64 C 92 56,104 52,112 52" stroke="#ffd09a" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M84 64 C 92 56,104 52,112 52" stroke="#ffd09a" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+      frente: `
         <path d="M116 168 L 121 182 L 126 168 Z M134 168 L 139 182 L 144 168 Z" fill="#fff" stroke="#123d0a" stroke-width="2" stroke-linejoin="round"/>
         <g transform="translate(196 180)">
           <path d="M-6 6 Q 22 -10 50 6" stroke="#444" stroke-width="3" fill="none"/>
@@ -128,11 +167,12 @@
       brote: ["#5fbf2a", "#4aa020"]
     },
     navidad: {
-      frente: `
+      sombrero: `
         <path d="M70 94 C 70 50,190 50,190 94 Z" fill="#e0242f" stroke="#5a0a0f" stroke-width="5" stroke-linejoin="round"/>
         <path d="M180 76 C 200 66,210 76,214 90" stroke="#e0242f" stroke-width="16" fill="none" stroke-linecap="round"/>
         <circle cx="216" cy="96" r="13" fill="#fff" stroke="#9aa" stroke-width="3"/>
-        <rect x="62" y="86" width="136" height="20" rx="10" fill="#fff" stroke="#9aa" stroke-width="3"/>
+        <rect x="62" y="86" width="136" height="20" rx="10" fill="#fff" stroke="#9aa" stroke-width="3"/>`,
+      frente: `
         <g transform="translate(6 176)"><rect x="0" y="10" width="40" height="34" rx="5" fill="#39ff88" stroke="#0b3a1f" stroke-width="3.5"/>
           <rect x="16" y="10" width="8" height="34" fill="#e0242f"/><rect x="-3" y="4" width="46" height="12" rx="4" fill="#2fd36b" stroke="#0b3a1f" stroke-width="3"/>
           <path d="M20 4 C 10 -8,4 2,20 4 C 36 2,30 -8,20 4 Z" fill="#e0242f" stroke="#5a0a0f" stroke-width="2.5"/></g>`
@@ -167,28 +207,30 @@
       encima: `${flor(134, 30, 1.4, "#ff9ad5")}`
     },
     sanjuan: {
-      frente: `
+      sombrero: `
         <ellipse cx="130" cy="88" rx="104" ry="18" fill="#e8c46a" stroke="#6b4a10" stroke-width="5"/>
         <path d="M84 86 C 84 48,176 48,176 86 Z" fill="#f2d27e" stroke="#6b4a10" stroke-width="5" stroke-linejoin="round"/>
-        <rect x="86" y="72" width="88" height="10" fill="#b3122e"/>
+        <rect x="86" y="72" width="88" height="10" fill="#b3122e"/>`,
+      frente: `
         <g transform="translate(2 178)"><path d="M0 22 C 0 0,44 0,44 22 C 44 44,0 44,0 22 Z" fill="#3c8a1e" stroke="#123d0a" stroke-width="3.5"/>
           <path d="M22 2 L 22 42 M2 22 L 42 22" stroke="#c9a46a" stroke-width="3"/><path d="M22 2 C 28 -8,36 -6,34 2" fill="#3c8a1e" stroke="#123d0a" stroke-width="3"/></g>`
     },
     patrias: {
-      frente: `
+      sombrero: `
         <path d="M74 98 C 70 50,190 50,186 98 Z" fill="#e0242f" stroke="#5a0a0f" stroke-width="5" stroke-linejoin="round"/>
         <path d="M76 74 L 184 74 M74 88 L 186 88" stroke="#fff" stroke-width="7"/>
         <path d="M74 96 L 64 124 L 82 120 Z M186 96 L 196 124 L 178 120 Z" fill="#e0242f" stroke="#5a0a0f" stroke-width="4" stroke-linejoin="round"/>
-        <circle cx="66" cy="128" r="6" fill="#fff"/><circle cx="194" cy="128" r="6" fill="#fff"/>
+        <circle cx="66" cy="128" r="6" fill="#fff"/><circle cx="194" cy="128" r="6" fill="#fff"/>`,
+      frente: `
         <g transform="translate(64 206)"><circle r="14" fill="#e0242f" stroke="#5a0a0f" stroke-width="3"/><circle r="8" fill="#fff"/><circle r="3.5" fill="#e0242f"/></g>
         <g transform="translate(212 150)"><rect x="0" y="0" width="4" height="70" fill="#8a6a3a"/>
           <rect x="4" y="2" width="16" height="30" fill="#e0242f"/><rect x="20" y="2" width="16" height="30" fill="#fff"/><rect x="36" y="2" width="16" height="30" fill="#e0242f"/>
           <rect x="4" y="2" width="48" height="30" fill="none" stroke="#5a0a0f" stroke-width="2.5"/></g>`
     },
     cumple: {
-      frente: `
-        <g transform="rotate(-18 92 70)"><path d="M70 92 L 92 20 L 114 92 Z" fill="#a77bff" stroke="#3a1a7a" stroke-width="5" stroke-linejoin="round"/>
-          <path d="M80 62 L 104 62 M76 78 L 108 78" stroke="#ffd23f" stroke-width="6"/><circle cx="92" cy="18" r="9" fill="#ff7a59" stroke="#7a2a10" stroke-width="3"/></g>${confeti}`
+      sombrero: `<g transform="rotate(-18 92 70)"><path d="M70 92 L 92 20 L 114 92 Z" fill="#a77bff" stroke="#3a1a7a" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M80 62 L 104 62 M76 78 L 108 78" stroke="#ffd23f" stroke-width="6"/><circle cx="92" cy="18" r="9" fill="#ff7a59" stroke="#7a2a10" stroke-width="3"/></g>`,
+      frente: `${confeti}`
     },
     primavera: {
       encima: `${flor(78, 80, 1, "#ff9ad5")}${flor(104, 66, 1, "#ffd23f")}${flor(158, 66, 1, "#a77bff")}${flor(184, 80, 1, "#ff7a59")}`
@@ -213,9 +255,10 @@
         <radialGradient id="${g}" cx="40%" cy="30%" r="75%"><stop offset="0" stop-color="${C.g[0]}"/><stop offset=".55" stop-color="${C.g[1]}"/><stop offset="1" stop-color="${C.g[2]}"/></radialGradient>
         <radialGradient id="${ir}" cx="50%" cy="60%" r="60%"><stop offset="0" stop-color="${C.i[0]}"/><stop offset="1" stop-color="${C.i[1]}"/></radialGradient>
         <linearGradient id="${lf}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6ff6a"/><stop offset="1" stop-color="#2fae1d"/></linearGradient>
+        ${estilosDefs(k)}
         <linearGradient id="${lf2}" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6ff6a"/><stop offset="1" stop-color="#2fae1d"/></linearGradient>
       </defs>
-      ${t.atras || ""}${cuerpo(g, C.o)}${cara(animo, ir)}${estilosSVG(estilos, traje, C.o)}${t.frente || ""}${brote(c1, c2)}${t.encima || ""}${extra}
+      ${t.atras || ""}${cuerpo(g, C.o)}${cara(animo, ir)}${estilosSVG(estilos.filter((e) => e !== "gorrita"), traje, C.o, k)}${t.frente || ""}${estilos.includes("gorrita") ? estilosSVG(["gorrita"], traje, C.o, k) : (t.sombrero || "")}${brote(c1, c2)}${t.encima || ""}${extra}
     </svg>`;
   }
 

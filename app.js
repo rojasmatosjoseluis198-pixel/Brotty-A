@@ -64,9 +64,12 @@ function etiquetas() {
   LUGARES.univ = t ? "🏢 Trabajo" : c.ocupacion === "instituto" ? "🏫 Instituto" : "🏫 Universidad";
 }
 function proxDefault(desde) {
-  const f = E.config.ingFrec;
-  return f === "semanal" ? addDias(desde, 7) : f === "quincenal" ? addDias(desde, 15) : addMeses(desde, 1);
+  return proxPorFrec(E.config.ingFrec, desde);
 }
+function proxPorFrec(f, desde) {
+  return f === "diario" ? addDias(desde, 1) : f === "semanal" ? addDias(desde, 7) : f === "quincenal" ? addDias(desde, 15) : addMeses(desde, 1);
+}
+const FREC_TXT = { diario: "cada día", semanal: "cada semana", quincenal: "cada quincena", mensual: "cada mes", irregular: "de vez en cuando" };
 const DIAS_CORTOS = ["D", "L", "M", "M", "J", "V", "S"];
 
 // ---------- Estado ----------
@@ -350,7 +353,7 @@ function renderPresup(k) {
     <div>Apartados: <b>${soles(nPas * c.pasaje)}</b> <span class="suave">(${nPas} día${nPas === 1 ? "" : "s"} de ${diasDe()} hasta tu ${lbl()})</span></div>
     <div class="suave" style="font-size:13px;margin-top:4px">Gastado este período: ${soles(gastPas)}${esEstudiante() && c.finCiclo ? ` · Clases hasta el ${fechaCorta(c.finCiclo)}` : ""}</div>`
     : `<div class="suave">${esEstudiante() && c.modo === "vacaciones" ? "Estás en modo vacaciones: sin pasajes 🏡" : "Sin pasajes configurados."}</div>`}</div>`;
-  if ((!esEstudiante() || c.modo === "ciclo") && c.menu && (c.comidaDias || []).length) h += `<div class="card"><h3>🍜 Comida fuera (${(c.comidaDias || []).map((d) => DIAS_CORTOS[d]).join(", ")})</h3><div>Apartados: <b>${soles(nMenu * c.menu)}</b> <span class="suave">(${nMenu} menú${nMenu === 1 ? "" : "s"})</span></div>
+  if ((!esEstudiante() || c.modo === "ciclo") && c.menu && (c.comidaDias || []).length) h += `<div class="card"><h3>🍜 Comida fuera (${(c.comidaDias || []).map((d) => DIAS_CORTOS[d]).join(", ")})</h3><div>Apartados: <b>${soles(nMenu * c.menu)}</b></div>
     ${proxMenu ? `<div class="suave" style="font-size:13px;margin-top:4px">Próximo: ${proxMenu === T ? "hoy" : fechaBonita(proxMenu)}</div>` : ""}</div>`;
 
   // Resumen de lo apartado
@@ -484,8 +487,8 @@ function renderMetas(k) {
       <div class="fila" style="margin-top:10px"><button class="btn chico oro" data-act="aportar" data-id="${m.id}">+ Apartar</button><button class="btn chico sec" data-act="retirar" data-id="${m.id}">Sacar</button><button class="btn chico sec" data-act="borrarMeta" data-id="${m.id}">Borrar</button></div></div>`;
   }
   h += `<button class="btn full" style="margin-top:12px" data-act="nuevaMeta">+ Nueva meta</button>`;
-  const n = mesesSinPedir();
-  h += `<div class="card" style="text-align:center"><div style="font-size:30px">👪</div><b>${n} ${n === 1 ? "mes" : "meses"} sin pedir dinero extra</b><div class="suave" style="font-size:13px">Se cuenta desde la última vez que registraste "Plata extra de mis papás".</div></div>`;
+  const n = mesesSinPedir(), c = E.config;
+  if (c.vivienda !== "familia" && !["propina", "mesada"].includes(c.ingTipo)) h += `<div class="card" style="text-align:center"><div style="font-size:30px">👪</div><b>${n} ${n === 1 ? "mes" : "meses"} sin pedir dinero extra</b><div class="suave" style="font-size:13px">Se cuenta desde la última vez que registraste "Plata extra de mis papás".</div></div>`;
   h += `<div class="card suave" style="font-size:13px">Tienes <b class="verde">${soles(k.libre)}</b> libres y <b class="gold">${soles(k.enMetas)}</b> apartados en metas (no cuentan en tu "hoy puedes gastar").</div>`;
   $("#metas").innerHTML = h;
 }
@@ -765,7 +768,8 @@ const ACT = {
   // Respaldo y ajustes
   sobranteAMeta: () => { if (!E.metas.length) return ACT.nuevaMeta(); formMeta(E.metas[0].id, 1); },
   instalar: async () => { if (!promptInstalar) return; promptInstalar.prompt(); await promptInstalar.userChoice; promptInstalar = null; render(); },
-  wOpt: (d) => { W[d.k] = d.v; if (d.k === "ingTipo") W.ingFrec = { beca: "mensual", mesada: "mensual", propina: "semanal", cachuelos: "irregular", sueldo: W.ingFrec === "quincenal" ? "quincenal" : "mensual" }[d.v]; wSig(); },
+  wOpt: (d) => { W[d.k] = d.v; if (d.k === "ingTipo") { W.ingFrec = { beca: "mensual", mesada: "mensual", propina: "semanal", cachuelos: "irregular", sueldo: "mensual" }[d.v]; W.proxAuto = true; }
+    if (d.k === "ingFrec") W.proxAuto = true; wSig(); },
   wAtras: () => { wLeer(); wIr(-1); },
   wSiguiente: () => wSig(),
   wDia: (d, el) => { el.classList.toggle("on"); },
@@ -862,7 +866,7 @@ function pintarAjustes() {
     <label>¿Dónde vives?</label><select id="pfViv">${opciones(VIV, c.vivienda)}</select>
     <hr><b>💵 Tu ingreso principal</b>
     <label>¿Cómo te llega tu plata?</label><select id="pfIng">${opciones(Object.fromEntries(Object.entries(ING).map(([k, v]) => [k, v.e + " " + v.N])), c.ingTipo)}</select>
-    <label>¿Cada cuánto?</label><select id="pfFrec">${opciones({ semanal: "Cada semana", quincenal: "Cada quincena", mensual: "Cada mes", irregular: "Irregular" }, c.ingFrec)}</select>
+    <label>¿Cada cuánto?</label><select id="pfFrec">${opciones({ diario: "Cada día", semanal: "Cada semana", quincenal: "Cada quincena", mensual: "Cada mes", irregular: "Irregular" }, c.ingFrec)}</select>
     <div class="fila"><div><label>Monto (S/)</label><input type="number" id="aSub" inputmode="decimal" value="${c.montoSub || ""}"></div>
       <div><label>Próxima (aprox.)</label><input type="date" id="aProx" value="${c.proxSub}"></div></div>
     <p class="nota">Si no sabes la fecha exacta, pon la más tardía posible.</p>
@@ -931,13 +935,14 @@ const PASOS = [
     h: () => opcionesW("vivienda", { familia: "🏡 Con mi familia", foraneo: "🧳 Soy foráneo, alquilo cuarto", otro: "✨ Otro" }) },
   { b: () => `¿Cómo te llega tu plata principalmente?`, auto: true,
     h: () => opcionesW("ingTipo", Object.fromEntries(Object.entries(ING).map(([k, v]) => [k, v.e + " " + v.N]))) + `<p class="nota">Si tienes varias, elige la principal. Las demás las registras como extra y van a tu sobrante.</p>` },
-  { si: () => W.ingTipo === "sueldo", b: () => `¿Cada cuánto te pagan?`, auto: true,
-    h: () => opcionesW("ingFrec", { quincenal: "Cada quincena", mensual: "Cada mes" }) },
+  { si: () => ["sueldo", "propina"].includes(W.ingTipo), b: () => W.ingTipo === "propina" ? `¿Cada cuánto te dan tu propina?` : `¿Cada cuánto te pagan?`, auto: true,
+    h: () => opcionesW("ingFrec", W.ingTipo === "propina" ? { diario: "📅 Cada día", semanal: "🗓️ Cada semana", quincenal: "🗓️ Cada quincena", mensual: "📆 Cada mes" } : { quincenal: "🗓️ Cada quincena", mensual: "📆 Cada mes" }) },
   { b: () => W.ingTipo === "cachuelos" ? `Como tus cachuelos no tienen fecha fija, dime hasta cuándo quieres que te alcance tu plata (por ejemplo, fin de mes).` : `¿Cuánto te llega y cuándo llega ${W.ingTipo === "sueldo" ? "el próximo" : "la próxima"} ${(ING[W.ingTipo] || ING.mesada).n}?`,
-    h: () => `${W.ingTipo === "cachuelos" ? "" : `<label>Monto (S/)</label><input type="number" id="wMonto" inputmode="decimal" placeholder="Ej: 300" value="${W.montoSub || ""}">`}
+    h: () => { if (W.ingTipo !== "cachuelos" && (W.proxAuto || !W.proxSub)) { W.proxSub = proxPorFrec(W.ingFrec, hoyISO()); W.proxAuto = true; }
+      return `${W.ingTipo === "cachuelos" ? "" : `<p class="nota">Te llega ${FREC_TXT[W.ingFrec]}. Calculé la próxima fecha por ti; cámbiala si no es así.</p><label>¿Cuánto te dan ${FREC_TXT[W.ingFrec]}? (S/)</label><input type="number" id="wMonto" inputmode="decimal" placeholder="Ej: 300" value="${W.montoSub || ""}">`}
       <label>${W.ingTipo === "cachuelos" ? "Hasta el" : "Próxima (aproximada)"}</label><input type="date" id="wProx" value="${W.proxSub || ""}">
-      <p class="nota">Si no sabes exacto, pon la fecha más tardía posible. Mejor que te sobre a que te falte.</p>`,
-    l: () => { W.montoSub = +($("#wMonto")?.value || 0); W.proxSub = $("#wProx").value; if (!W.proxSub) return "Elige una fecha"; if (W.proxSub <= hoyISO()) return "La fecha debe ser después de hoy"; } },
+      <p class="nota">Si no sabes exacto, pon la fecha más tardía posible. Mejor que te sobre a que te falte.</p>`; },
+    l: () => { W.montoSub = +($("#wMonto")?.value || 0); if ($("#wProx").value !== W.proxSub) W.proxAuto = false; W.proxSub = $("#wProx").value; if (!W.proxSub) return "Elige una fecha"; if (W.proxSub <= hoyISO()) return "La fecha debe ser después de hoy"; } },
   { b: () => `¿Cuánta plata tienes ahora mismo? (efectivo + Yape + cuenta)`,
     h: () => `<input type="number" id="wSaldo" inputmode="decimal" placeholder="Ej: 120" value="${W.saldoInicial || ""}">`,
     l: () => { W.saldoInicial = +$("#wSaldo").value || 0; } },
