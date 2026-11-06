@@ -286,6 +286,30 @@ function renderInicio(k) {
     sub += `<br><span class="desglose">Para hoy: ${soles(k.pasajeHoy + k.comidaHoy + k.diario)} → ${partes.join(" · ")}</span>`;
   }
   if (k.liberado > 0) sub += `<br><span class="gold">🍜 Te sobraron ${soles(k.liberado)} de tu comida ✨</span>`;
+  const bolsillo = E.config.ingTipo === "propina" && (k.pasajeHoy || k.comidaHoy);
+  $(".hoy-lbl").textContent = bolsillo ? "Hoy tienes" : "Hoy puedes gastar";
+  $(".barra").style.display = bolsillo ? "none" : "";
+  const bolsa = $("#bolsa");
+  if (bolsillo) {
+    const P = k.pasajeHoy, C = k.comidaHoy, L = k.diario, lib = k.liberado;
+    const comSeg = k.comio ? r2(C - lib) : C, libSeg = r2(L + lib);
+    const usadoLib = Math.min(k.noPrev, libSeg), over = r2(Math.max(0, k.noPrev - libSeg)), libreQueda = r2(Math.max(0, libSeg - k.noPrev));
+    const tiene = r2(Math.max(0, k.pasajePend + (k.comio ? 0 : C) + libreQueda - over));
+    const tot = P + comSeg + libSeg + over || 1, w = (v) => (v / tot) * 100;
+    num.textContent = soles(tiene);
+    num.classList.toggle("neg", over > 0 || tiene <= 0);
+    bolsa.style.display = "";
+    bolsa.innerHTML = `<div class="bolsa-barra">
+        ${P ? `<i class="seg pas ${k.pasajePend <= 0 ? "usado" : ""}" style="width:${w(P)}%"></i>` : ""}
+        ${C ? `<i class="seg com ${k.comio ? "usado" : ""}" style="width:${w(comSeg)}%"></i>` : ""}
+        ${usadoLib > 0 ? `<i class="seg lib usado" style="width:${w(usadoLib)}%"></i>` : ""}
+        ${libreQueda > 0 ? `<i class="seg lib" style="width:${w(libreQueda)}%"></i>` : ""}
+        ${over > 0 ? `<i class="seg over" style="width:${w(over)}%"></i>` : ""}</div>
+      <div class="bolsa-ley">${P ? `<span style="--c:#4da3ff">🚌 ${soles(P)}${k.pasajePend <= 0 ? " ✓" : ""}</span>` : ""}${C ? `<span style="--c:var(--dorado)">🍜 ${soles(comSeg)}${k.comio ? " ✓" : ""}</span>` : ""}<span style="--c:var(--verde)">✨ ${soles(libSeg)}</span></div>`;
+    sub = `Libre para tus gustos: <b class="${libreQueda > 0 ? "verde" : "coral"}">${soles(libreQueda)}</b>`;
+    if (over > 0) sub += `<br><span class="coral">⚠️ ${k.pasajePend > 0 ? `Estás usando ${soles(over)} de la plata de tu pasaje` : !k.comio && k.comidaHoy ? `Estás usando ${soles(over)} de la plata de tu comida` : `Gastaste ${soles(over)} más de lo que tenías para hoy · los próximos días se ajustan`}</span>`;
+    if (lib > 0) sub += `<br><span class="gold">🍜 Te sobraron ${soles(lib)} de tu comida ✨</span>`;
+  } else { bolsa.style.display = "none"; bolsa.innerHTML = ""; }
   $("#hoySub").innerHTML = sub;
   $("#subLine").innerHTML = (k.sobrante > 0 ? `<span class="gold">Sobrante del período: ${soles(k.sobrante)}</span><br>` : "") + esc(E.config.proxSub
     ? (k.subVencida ? `${proxIng(1)}: ¿ya llegó?` : `${proxIng(1)}: ~${k.D} día${k.D === 1 ? "" : "s"} (aprox.)`)
@@ -305,7 +329,8 @@ function renderInicio(k) {
     const txt = p.tipo === "preste" ? `${esc(p.persona)} te debe ${soles(pendienteP(p))}` : `Le debes ${soles(pendienteP(p))} a ${esc(p.persona)}`;
     av.push(`<div class="chip aviso" data-act="irPrestamos"><div class="ico">🤝</div><div class="t"><b>${txt}</b><span>${dias === 0 ? "Vence hoy" : `Venció hace ${dias} día${dias === 1 ? "" : "s"}`}</span></div></div>`);
   }
-  if (E.config.respaldoPendiente) av.push(`<div class="card aviso"><b>💾 Brotty: ¿hacemos respaldo?</b><div class="suave">Llegó tu ${lbl()}, buen momento para guardar una copia.</div>
+  const cR = E.config, toca = cR.respaldoPendiente || (E.movs.length >= 10 && (!cR.ultimoRespaldo || difDias(cR.ultimoRespaldo, k.T) >= 14));
+  if (toca && cR.respaldoOmitido !== k.T) av.push(`<div class="card aviso"><b>💾 Brotty: ¿hacemos respaldo?</b><div class="suave">Tus datos viven solo en este celular. Si desinstalas Brotty o cambias de celular, se borran. Guarda una copia en tu WhatsApp o Drive.</div>
     <div class="acciones"><button class="btn chico" data-act="respaldo">Hacer respaldo</button><button class="btn chico sec" data-act="omitirRespaldo">Ahora no</button></div></div>`);
   const instalada = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
   if (!instalada) av.unshift(`<div class="card aviso"><b>📲 ¡Instálame!</b><div class="suave">Así me tienes en tu pantalla como app y funciono sin internet. En Chrome: toca <b>⋮</b> → <b>Instalar aplicación</b>.</div>${promptInstalar ? `<div class="acciones"><button class="btn chico" data-act="instalar">Instalar ahora</button></div>` : ""}</div>`);
@@ -328,13 +353,15 @@ function renderInicio(k) {
 }
 
 // ---- Movimientos ----
-let movMes = hoyISO().slice(0, 7);
+let movMes = hoyISO().slice(0, 7), movFiltro = null;
 function renderMovs() {
   const [y, m] = movMes.split("-").map(Number);
   $("#movMesLabel").textContent = capital(new Date(y, m - 1, 1).toLocaleDateString("es-PE", { month: "long", year: "numeric" }));
-  const lista = E.movs.filter((x) => x.fecha.startsWith(movMes)).sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora || "").localeCompare(a.hora || "") || b.creado - a.creado);
-  const ing = suma(lista.filter((x) => x.tipo === "ingreso"), (x) => x.monto), gas = suma(lista.filter((x) => x.tipo === "gasto"), (x) => x.monto);
-  let html = `<div class="resumen"><div class="card"><small>Ingresos</small><b class="verde">${soles(ing)}</b></div><div class="card"><small>Gastos</small><b class="coral">${soles(gas)}</b></div></div>`;
+  const delMes = E.movs.filter((x) => x.fecha.startsWith(movMes));
+  const lista = delMes.filter((x) => !movFiltro || x.tipo === movFiltro).sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora || "").localeCompare(a.hora || "") || b.creado - a.creado);
+  const ing = suma(delMes.filter((x) => x.tipo === "ingreso"), (x) => x.monto), gas = suma(delMes.filter((x) => x.tipo === "gasto"), (x) => x.monto);
+  let html = `<div class="resumen"><div class="card filtro ${movFiltro === "ingreso" ? "on" : ""}" data-act="movFiltro" data-t="ingreso"><small>Ingresos</small><b class="verde">${soles(ing)}</b></div><div class="card filtro ${movFiltro === "gasto" ? "on" : ""}" data-act="movFiltro" data-t="gasto"><small>Gastos</small><b class="coral">${soles(gas)}</b></div></div>
+    ${movFiltro ? `<div class="nota" style="text-align:center;margin-top:8px">Mostrando solo ${movFiltro === "ingreso" ? "ingresos" : "gastos"} · toca de nuevo para ver todo</div>` : ""}`;
   if (!lista.length) html += `<div class="vacio">No hay movimientos este mes.</div>`;
   let dia = "";
   for (const x of lista) {
@@ -588,7 +615,7 @@ function pintarRegistro() {
   if (R.tab === "prestamo") {
     h += `<div class="chips-sel" style="margin-bottom:6px"><button class="${R.tipoP === "preste" ? "on" : ""}" data-act="regTipoP" data-t="preste">🫴 Yo presté</button><button class="${R.tipoP === "debo" ? "on" : ""}" data-act="regTipoP" data-t="debo">🙏 Me prestaron</button></div>
       <label>Persona</label><input type="text" id="rPersona" maxlength="40" placeholder="Ej: Carlos" value="${esc(R.persona)}">
-      <div class="monto">${R.monto ? "S/ " + R.monto : "S/ 0"}</div>${teclado()}
+      <div class="monto ${R.reemplazar ? "sel" : ""}">${R.monto ? "S/ " + R.monto : "S/ 0"}</div>${R.reemplazar ? `<div class="nota" style="text-align:center;margin-top:-4px">Escribe el nuevo monto</div>` : ""}${teclado()}
       <label>¿Para cuándo debe devolverse? (opcional)</label><input type="date" id="rVence" value="${R.vence}">
       <label>Nota (opcional)</label><input type="text" id="rNota" maxlength="60" value="${esc(R.nota)}">
       <button class="btn full" style="margin-top:14px" data-act="guardarReg">Guardar préstamo</button>`;
@@ -603,7 +630,7 @@ function pintarRegistro() {
   } else {
     const c = CATS[R.cat];
     h += `<div class="cat-elegida"><div class="cat-btn on" style="flex:1;flex-direction:row;justify-content:flex-start;padding:8px 12px"><span class="e" style="font-size:24px">${c.e}</span>${c.n}</div><button class="btn chico sec" data-act="regCambiarCat">Cambiar</button></div>
-      <div class="monto">${R.monto ? "S/ " + R.monto : "S/ 0"}</div>`;
+      <div class="monto ${R.reemplazar ? "sel" : ""}">${R.monto ? "S/ " + R.monto : "S/ 0"}</div>${R.reemplazar ? `<div class="nota" style="text-align:center;margin-top:-4px">Escribe el nuevo monto</div>` : ""}`;
     if (R.tab === "gasto") h += `<div class="chips-sel">${Object.entries(LUGARES).map(([k, n]) => `<button class="${R.lugar === k ? "on" : ""}" data-act="regLugar" data-l="${k}">${n}</button>`).join("")}</div>`;
     h += teclado();
     h += `<div class="fila"><div><label>Nota (opcional)</label><input type="text" id="rNota" maxlength="60" placeholder="Ej: pan con palta" value="${esc(R.nota)}"></div>
@@ -632,6 +659,7 @@ const ACT = {
   tecla: (d) => {
     leerCamposReg();
     let m = R.monto;
+    if (R.reemplazar) { R.reemplazar = false; if (d.t !== "⌫") m = ""; }
     if (d.t === "⌫") m = m.slice(0, -1);
     else if (d.t === ".") { if (!m.includes(".")) m = (m || "0") + "."; }
     else if (!(m.includes(".") && m.split(".")[1].length >= 2) && m.length < 8) m = m === "0" ? d.t : m + d.t;
@@ -669,7 +697,7 @@ const ACT = {
     if (m.cat === "pagos" || m.cat === "ajuste") {
       return abrir(() => { sheet.innerHTML = `${btnCerrar()}<h2>${esc(m.nota || CATS[m.cat].n)}</h2><p class="suave">${soles(m.monto)} · ${fechaBonita(m.fecha)}</p><button class="btn rojo full" data-act="borrarMovId" data-id="${m.id}">Borrar</button>`; });
     }
-    R = { tab: m.tipo, cat: m.cat, monto: String(m.monto), lugar: m.lugar, nota: m.nota || "", fecha: m.fecha, editId: m.id };
+    R = { tab: m.tipo, cat: m.cat, monto: String(m.monto), lugar: m.lugar, nota: m.nota || "", fecha: m.fecha, editId: m.id, reemplazar: true };
     abrir(pintarRegistro);
   },
   borrarMov: () => { if (confirm("¿Borrar este movimiento?")) { E.movs = E.movs.filter((x) => x.id !== R.editId); guardar(); cerrar(); } },
@@ -679,6 +707,7 @@ const ACT = {
     if (m && m.pagoId) { const p = E.pagos.find((x) => x.id === m.pagoId); if (p) p.pagadoEl = null; }
     E.movs = E.movs.filter((x) => x.id !== d.id); guardar(); cerrar();
   },
+  movFiltro: (d) => { movFiltro = movFiltro === d.t ? null : d.t; renderMovs(); },
   movMes: (d) => { const [y, m] = movMes.split("-").map(Number); movMes = fechaISO(new Date(y, m - 1 + +d.d, 1)).slice(0, 7); renderMovs(); },
   statsModo: (d) => { statsModo = d.m; statsOff = 0; renderStats(); },
   statsNav: (d) => { statsOff = Math.min(0, statsOff + +d.d); renderStats(); },
@@ -797,7 +826,7 @@ const ACT = {
   pColor: (d, el) => { document.querySelectorAll("#pfColores button").forEach((b) => b.classList.toggle("on", b === el)); previewPerfil(); },
   pEstilo: (d, el) => { el.classList.toggle("on"); previewPerfil(); },
   respaldo: () => hacerRespaldo(),
-  omitirRespaldo: () => { E.config.respaldoPendiente = false; guardar(); },
+  omitirRespaldo: () => { E.config.respaldoPendiente = false; E.config.respaldoOmitido = hoyISO(); guardar(); },
   ajustes: () => abrir(pintarAjustes),
   diaClase: (d, el) => el.classList.toggle("on"),
   guardarAjustes: () => guardarPerfil(),
@@ -902,7 +931,7 @@ function pintarAjustes() {
       ${esEstudiante() ? `<div><label>En vacaciones (S/)</label><input type="number" id="aComidaVac" inputmode="decimal" value="${c.comidaSemVac || ""}"></div>` : ""}</div>
     <hr><b>🎂 Tu cumpleaños</b><input type="date" id="aCumple" value="${cumple}">
     <button class="btn full" style="margin-top:16px" data-act="guardarAjustes">Guardar perfil</button>
-    <hr><b>💾 Tus datos</b><p class="nota">Tus datos viven solo en este celular. Haz respaldo para no perderlos.</p>
+    <hr><b>💾 Tus datos</b><p class="nota">Tus datos viven solo en este celular. <b class="coral">Si desinstalas Brotty, se borran.</b> No hace falta reinstalar para actualizar: basta con cerrarla y abrirla. Haz respaldo de vez en cuando.</p>
     <div class="fila"><button class="btn sec" data-act="respaldo">Hacer respaldo</button><button class="btn sec" data-act="restaurar">Restaurar</button></div>
     <input type="file" id="archivoRestaurar" accept=".json,application/json" hidden>
     <button class="btn sec full" style="margin-top:8px" data-act="ajustarSaldo">⚖️ Corregir mi saldo</button>
@@ -986,7 +1015,8 @@ const PASOS = [
   { b: () => `¡Último paso! ¿Cómo quieres que me vea? 😊`,
     h: () => `<label>Color</label><div class="chips-sel">${Object.entries(Brotty.COLORES).map(([k, v]) => `<button class="${W.color === k ? "on" : ""}" data-act="wColor" data-c="${k}"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${v.g[1]};margin-right:5px"></span>${v.n}</button>`).join("")}</div>
       <label>Estilo (puedes combinar)</label><div class="chips-sel">${Object.entries(Brotty.ESTILOS).map(([k, v]) => `<button class="${W.estilos.includes(k) ? "on" : ""}" data-act="wEstilo" data-e="${k}">${v.e} ${v.n}</button>`).join("")}</div>
-      <label>¿Cómo me llamo?</label><input type="text" id="wNombreB" maxlength="16" value="${esc(W.nombreBrotty)}">`,
+      <label>¿Cómo me llamo?</label><input type="text" id="wNombreB" maxlength="16" value="${esc(W.nombreBrotty)}">
+      <p class="nota" style="margin-top:12px">💾 Tus datos se guardan solo en este celular. Si desinstalas Brotty, se borran; por eso te recordaré hacer respaldo.</p>`,
     l: () => { W.nombreBrotty = $("#wNombreB").value.trim() || "Brotty"; } }
 ];
 function opcionesW(k, obj) { return `<div style="display:grid;gap:8px">${Object.entries(obj).map(([v, n]) => `<button class="btn ${W[k] === v ? "" : "sec"} full" style="text-align:left" data-act="wOpt" data-k="${k}" data-v="${v}">${n}</button>`).join("")}</div>`; }

@@ -19,7 +19,7 @@
       <linearGradient id="mon${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff9ccc"/><stop offset="1" stop-color="#e0337a"/></linearGradient>
       <linearGradient id="big${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a4a26"/><stop offset="1" stop-color="#3a1f0c"/></linearGradient>`;
   }
-  function estilosSVG(est, traje, o, k) {
+  function estilosSVG(est, traje, o, k, animo) {
     let s = "";
     if (est.includes("pestanas")) s += `
       <path d="M70 116 Q 96 98 122 116" stroke="#14070a" stroke-width="5" fill="none" stroke-linecap="round"/>
@@ -37,11 +37,11 @@
         <path d="M74 120 L 92 112 M74 130 L 84 126" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
         <path d="M142 120 L 160 112 M142 130 L 152 126" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
       </g>`;
-    if (est.includes("bigote")) s += `
+    if (est.includes("bigote")) s += `<g transform="translate(0 ${animo === "celebrando" ? -5 : 0})">
       <path d="M130 158 C 122 146,100 144,90 152 C 82 158,76 152,78 146 C 70 152,74 166,90 166 C 104 166,116 162,130 160
                C 144 162,156 166,170 166 C 186 166,190 152,182 146 C 184 152,178 158,170 152 C 160 144,138 146,130 158 Z"
             fill="url(#big${k})" stroke="#1b0f06" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M96 152 C 104 150,114 152,122 156 M164 152 C 156 150,146 152,138 156" stroke="#b07a4a" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>`;
+      <path d="M96 152 C 104 150,114 152,122 156 M164 152 C 156 150,146 152,138 156" stroke="#b07a4a" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/></g>`;
     if (est.includes("gorrita")) s += `
       <path d="M68 98 C 64 44,196 44,192 98 Q 130 108 68 98 Z" fill="url(#gor${k})" stroke="#5a0a12" stroke-width="5" stroke-linejoin="round"/>
       <path d="M130 50 L 130 100 M98 56 C 92 70,90 86,92 100 M162 56 C 168 70,170 86,168 100" stroke="#8a1020" stroke-width="3" fill="none" stroke-dasharray="5 4"/>
@@ -148,6 +148,14 @@
     <rect x="244" y="130" width="7" height="12" rx="2" fill="#ff7a59" transform="rotate(-10 247 136)"/>
     <circle cx="40" cy="20" r="4" fill="#ff7a59"/><circle cx="226" cy="30" r="4" fill="#39ff88"/>`;
 
+  // Colmillos que siguen la forma de la boca según el ánimo
+  const COLMILLOS = {
+    feliz: "M116 168 L 121 182 L 126 168 Z M134 168 L 139 182 L 144 168 Z",
+    celebrando: "M114 163 L 119 177 L 124 162 Z M136 162 L 141 177 L 146 163 Z",
+    preocupado: "M116 182 L 120 193 L 124 183 Z M136 185 L 140 195 L 144 185 Z",
+    triste: "M116 189 L 120 199 L 125 186 Z M135 186 L 140 199 L 144 189 Z"
+  };
+  const colmillos = (a) => `<path d="${COLMILLOS[a] || COLMILLOS.feliz}" fill="#fff" stroke="#123d0a" stroke-width="2" stroke-linejoin="round"/>`;
   const TRAJES = {
     halloween: {
       atras: `<path d="M56 118 C 20 160,10 220,4 246 L 256 246 C 250 220,240 160,204 118 Z" fill="#3a1352" stroke="#12051c" stroke-width="5" stroke-linejoin="round"/>
@@ -157,14 +165,14 @@
         <path d="M100 54 C 92 70,92 88,98 102 M130 50 L130 106 M160 54 C 168 70,168 88,162 102" stroke="#c45f00" stroke-width="4" fill="none" stroke-linecap="round"/>
         <path d="M84 64 C 92 56,104 52,112 52" stroke="#ffd09a" stroke-width="5" fill="none" stroke-linecap="round"/>`,
       frente: `
-        <path d="M116 168 L 121 182 L 126 168 Z M134 168 L 139 182 L 144 168 Z" fill="#fff" stroke="#123d0a" stroke-width="2" stroke-linejoin="round"/>
         <g transform="translate(196 180)">
           <path d="M-6 6 Q 22 -10 50 6" stroke="#444" stroke-width="3" fill="none"/>
           <circle cx="8" cy="0" r="7" fill="#ff5ea8" stroke="#5a0d24" stroke-width="2"/><circle cx="22" cy="-4" r="7" fill="#ffd23f" stroke="#7a5200" stroke-width="2"/><circle cx="36" cy="0" r="7" fill="#39ff88" stroke="#0b3a1f" stroke-width="2"/>
           <path d="M-8 4 L 52 4 C 54 30,40 44,22 44 C 4 44,-10 30,-8 4 Z" fill="#26222b" stroke="#000" stroke-width="4"/>
           <ellipse cx="22" cy="4" rx="30" ry="6" fill="#3c3644" stroke="#000" stroke-width="3"/>
         </g>`,
-      brote: ["#5fbf2a", "#4aa020"]
+      brote: ["#5fbf2a", "#4aa020"],
+      boca: true
     },
     navidad: {
       sombrero: `
@@ -258,7 +266,7 @@
         ${estilosDefs(k)}
         <linearGradient id="${lf2}" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6ff6a"/><stop offset="1" stop-color="#2fae1d"/></linearGradient>
       </defs>
-      ${t.atras || ""}${cuerpo(g, C.o)}${cara(animo, ir)}${estilosSVG(estilos.filter((e) => e !== "gorrita"), traje, C.o, k)}${t.frente || ""}${estilos.includes("gorrita") ? estilosSVG(["gorrita"], traje, C.o, k) : (t.sombrero || "")}${brote(c1, c2)}${t.encima || ""}${extra}
+      ${t.atras || ""}${cuerpo(g, C.o)}${cara(animo, ir)}${t.boca ? colmillos(animo) : ""}${estilosSVG(estilos.filter((e) => e !== "gorrita"), traje, C.o, k, animo)}${t.frente || ""}${estilos.includes("gorrita") ? estilosSVG(["gorrita"], traje, C.o, k, animo) : (t.sombrero || "")}${brote(c1, c2)}${t.encima || ""}${extra}
     </svg>`;
   }
 

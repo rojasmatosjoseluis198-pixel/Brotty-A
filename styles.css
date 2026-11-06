@@ -251,3 +251,13 @@ input, select { user-select: text; }
 .desglose { display: inline-block; margin-top: 4px; font-size: 12.5px; color: var(--suave); }
 body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 150px; pointer-events: none; z-index: 4;
   background: linear-gradient(to bottom, rgba(13,21,18,0), rgba(13,21,18,.92) 42%, rgba(13,21,18,.98)); }
+
+.bolsa { max-width: 300px; margin: 8px auto 2px; }
+.bolsa-barra { display: flex; height: 16px; border-radius: 9px; overflow: hidden; background: var(--caja2); border: 2px solid var(--borde); }
+.bolsa-barra .seg { height: 100%; transition: width .4s; }
+.seg.pas { background: #4da3ff; } .seg.com { background: var(--dorado); } .seg.lib { background: var(--verde); } .seg.over { background: #ff4a3d; }
+.seg.usado { opacity: .35; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,.35) 0 4px, transparent 4px 8px); }
+.bolsa-ley { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--suave); margin-top: 6px; }
+.bolsa-ley span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 3px; background: var(--c); margin-right: 4px; }
+.monto.sel { background: rgba(57,255,136,.12); border-radius: 12px; }
+.card.filtro { cursor: pointer; } .card.filtro.on { border-color: var(--verde); }
